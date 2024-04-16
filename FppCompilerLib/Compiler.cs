@@ -12,6 +12,11 @@ namespace FppCompilerLib
 
         }
 
+        /// <summary>
+        /// Compiles the program to a blueprint string
+        /// </summary>
+        /// <param name="program"></param>
+        /// <returns></returns>
         public string Compile(string program)
         {
             var lexicalAnalyzer = new LexicalAnalyzer();

@@ -5,18 +5,31 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement
 {
     internal class TypeManager
     {
+        private readonly TypeInfo[] typesForResolve = new TypeInfo[] { new Int(), new Bool() };
+
         public TypeManager() { }
 
+        /// <summary>
+        /// Returns a type by its name
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public TypeInfo ResolveType(string name)
         {
-            return name switch
-            {
-                "int" => new Int(),
-                "bool" => new Bool(),
-                _ => throw new ArgumentException($"Unrecognized type {name}"),
-            };
+            var targetType = typesForResolve.FirstOrDefault(t => t.Name == name);
+            if (targetType != null)
+                return targetType;
+
+            throw new ArgumentException($"Unrecognized type {name}");
         }
 
+        /// <summary>
+        /// Converts a string to a constant with the desired type
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public Constant Parse(string value)
         {
             int[] machineValues;

@@ -1,8 +1,8 @@
-﻿using System.Linq;
-using System.Xml.Linq;
-
-namespace FppCompilerLib.SyntacticalAnalysis
+﻿namespace FppCompilerLib.SyntacticalAnalysis
 {
+    /// <summary>
+    /// 
+    /// </summary>
     internal class SyntacticalAnalyzer
     {
         private readonly SelectSet selectSet;
@@ -18,11 +18,17 @@ namespace FppCompilerLib.SyntacticalAnalysis
             selectSet = new SelectSet(grammar, firstSet, followSet, k);
         }
 
+        /// <summary>
+        /// Parses an array of program tokens into a syntax tree
+        /// </summary>
+        /// <param name="terminals"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
         public NonTerminalNode Parse(TerminalWithValue[] terminals)
         {
             var results = ParseNonTerminal(terminals, axiom, 0);
             if (results.Length > 1)
-                throw new ArgumentException("Пиздец");
+                throw new ArgumentException("It is not possible to unambiguously parse the program");
             if (results.Length == 0)
                 throw new ArgumentException("I can't parse this shit");
             return results.First().node;
@@ -38,37 +44,6 @@ namespace FppCompilerLib.SyntacticalAnalysis
                 .ToArray();
             return result;
         }
-
-        //private (NonTerminalNode node, int index)[] ParseRule(TerminalWithValue[] terminals, Rule rule, int index, int ruleIndex)
-        //{
-        //    var childs = new List<ParseNode>();
-        //    for (var i = ruleIndex; i < rule.tokens.Length; i++)
-        //    {
-        //        var token = rule.tokens[ruleIndex];
-        //        if (token is Terminal terminal)
-        //        {
-        //            if (terminal != terminals[index])
-        //                return Array.Empty<(NonTerminalNode?, int)>();
-        //            childs.Add(new TerminalNode(terminals[index]));
-        //            index++;
-        //        }
-        //        else if (token is NonTerminal nonTerminal)
-        //        {
-        //            var parseNonTerminalResults = ParseNonTerminal(terminals, nonTerminal, index).ToArray();
-        //            if (parseNonTerminalResults.Length == 0)
-        //                return Array.Empty<(NonTerminalNode?, int)>();
-        //            foreach (var result in parseNonTerminalResults)
-        //            {
-        //                var newIndex = result.index;
-        //                var nextResults = ParseRule(terminals, rule, newIndex, i + 1);
-        //            }
-        //            if (node == null)
-        //                return (null, 0);
-        //            childs.Add(node);
-        //        }
-        //    }
-        //    return (new NonTerminalNode(rule.source, childs.ToArray(), rule), index);
-        //}
 
         private (NonTerminalNode node, int index)[] ParseRule(TerminalWithValue[] terminals, Rule rule, int index)
         {

@@ -6,8 +6,16 @@ using FppCompilerLib.SemanticAnalysis.TypeManagement;
 
 namespace FppCompilerLib.SemanticAnalysis
 {
+    /// <summary>
+    /// Performs semantic analysis of the syntax tree
+    /// </summary>
     internal class SemanticAnalyzer
     {
+        /// <summary>
+        /// Converts a program's syntax tree into a semantic tree
+        /// </summary>
+        /// <param name="rootNode"></param>
+        /// <returns></returns>
         public SemanticNode Parse(SemanticNode rootNode)
         {
             var ramManager = new RAMManager(8);

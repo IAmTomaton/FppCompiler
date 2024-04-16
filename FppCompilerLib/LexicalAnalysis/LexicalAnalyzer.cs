@@ -3,6 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace FppCompilerLib.LexicalAnalysis
 {
+    /// <summary>
+    /// Performs lexical analysis of the program
+    /// </summary>
     internal class LexicalAnalyzer
     {
         private readonly string[] binaryOperators = { "<<", ">>", "**", "!=", "==", "<=", ">=", "||", "&&", ">", "<", "+", "/", "%", "|", "&", "^" };
@@ -13,9 +16,13 @@ namespace FppCompilerLib.LexicalAnalysis
         private readonly string wordRegEx = "[a-zA-Z_][0-9a-zA-Z_]*";
         private readonly string constRegEx = "[0-9]+\\.[0-9]*|[0-9]+|true|false";
 
+        /// <summary>
+        /// Divides the program into an array of tokens.
+        /// </summary>
+        /// <param name="programString"></param>
+        /// <returns></returns>
         public TerminalWithValue[] Parse(string programString)
         {
-            var r = GetRegEx();
             var tokens = Regex.Matches(programString, GetRegEx(), RegexOptions.IgnoreCase)
                 .Select(match => match.Value)
                 .Select(str => StringToTerminal(str))

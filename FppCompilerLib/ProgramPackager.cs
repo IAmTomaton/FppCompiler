@@ -9,7 +9,7 @@ namespace FppCompilerLib
     {
         private static readonly string[] signalNames = Enumerable.Range(0, 10)
             .Select(d => d.ToString())
-            .Concat("ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray().Select(ch => ch.ToString()))
+            .Concat("ABCDEFGHIJKLMNOPQRSTUVWXYZ".Select(ch => ch.ToString()))
             .Select(s => $"signal-{s}")
             .ToArray();
         private static readonly string addressSignal = "signal-blue";

@@ -7,6 +7,7 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement
         public abstract string Name { get; }
         public abstract int Size { get; }
 
+        // Placeholders for functions
         public virtual bool TryGetFunction(string name, TypeInfo[] argTypes, out Function function) =>
             throw new ArgumentException($"Type \"{Name}\" does not have function \"{name}\"");
         public virtual bool TryGetConversionFrom(TypeInfo source, out UnaryOperator conversionFunc) =>
