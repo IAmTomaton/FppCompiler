@@ -2,81 +2,123 @@
 using FppCompilerLib.SemanticAnalysis.MemoryManagement;
 using FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes;
 using FppCompilerLib.SyntacticalAnalysis;
-using System;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes.AssignNodes
 {
-    internal class AssignNode : SemanticNode
+    internal class InitedAssignNode : InitedSemanticNode
     {
-        private readonly AssignableNode target;
-        private readonly ResultableNode expression;
-        private readonly Variable? tempVariableTarget;
-        private readonly Variable? tempVariableExp;
+        private readonly InitedAssignableNode target;
+        private readonly InitedResultableNode expression;
 
-        public AssignNode(AssignableNode target, ResultableNode expression)
+        public InitedAssignNode(InitedAssignableNode target, InitedResultableNode expression)
         {
             this.target = target;
             this.expression = expression;
         }
 
-        public AssignNode(AssignableNode target, ResultableNode expression, Variable? tempVariableTarget = null, Variable? tempVariableExp = null) : this(target, expression)
+        public static InitedAssignNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
         {
-            this.tempVariableTarget = tempVariableTarget;
-            this.tempVariableExp = tempVariableExp;
+            var target = parceTable.Parse<InitedAssignableNode>(node.childs[0].AsNonTerminalNode);
+            var expression = parceTable.Parse<InitedResultableNode>(node.childs[2].AsNonTerminalNode);
+            return new InitedAssignNode(target, expression);
         }
 
-        public static AssignNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
-        {
-            var target = parceTable.Parse<AssignableNode>(node.childs[0].AsNonTerminalNode);
-            var expression = parceTable.Parse<ResultableNode>(node.childs[2].AsNonTerminalNode);
-            return new AssignNode(target, expression);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            if (obj == null) return false;
-            if (obj is not AssignNode other) return false;
-            return target.Equals(other.target) && expression.Equals(other.expression);
-        }
-
-        public override int GetHashCode()
-        {
-            return target.GetHashCode() + expression.GetHashCode() * 37;
-        }
-
-        public override AssignNode UpdateTypes(Context context)
+        public override TypedAssignNode UpdateTypes(Context context)
         {
             var typedTarget = target.UpdateTypes(context.GetChild());
             var typedExpression = expression.UpdateTypes(context.GetChild());
+
             if (!typedTarget.TargetType.Equals(typedExpression.ResultType))
-                throw new InvalidOperationException();
-            return new AssignNode(typedTarget, typedExpression);
+                throw new InvalidOperationException($"An attempt to assign a variable of type {typedTarget.TargetType.Name} to a value of type {typedExpression.ResultType.Name}");
+
+            return new TypedAssignNode(typedTarget, typedExpression);
+        }
+    }
+
+    internal class TypedAssignNode : TypedSemanticNode
+    {
+        private readonly TypedAssignableNode target;
+        private readonly TypedResultableNode expression;
+
+        public TypedAssignNode(TypedAssignableNode target, TypedResultableNode expression)
+        {
+            this.target = target;
+            this.expression = expression;
         }
 
-        public override AssignNode UpdateContext(Context context)
+        public override UpdatedAssignNode UpdateContext(Context context)
         {
-            Variable? tempVariableTarget = null;
-            Variable? tempVariableExp = null;
+            UpdatedAssignableNode updatedTarget;
+            UpdatedResultableNode updatedExpression;
 
-            var updatedTarget = target.UpdateContext(context.GetChild());
-            //if (!updatedTarget.IsStaticTarget)
-            //{
-            //    (_, tempVariableTarget) = context.memoryManager.CreateTempVariable(updatedTarget.TargetType);
-            //    updatedTarget = target.UpdateContext(context.GetChild(), tempVariableTarget);
-            //}
+            if (target.AssignableNodeType == AssignableNodeType.Variable)
+            {
+                updatedTarget = target.UpdateContext(context.GetChild());
+                updatedExpression = expression.UpdateContext(context.GetChild(), updatedTarget.VariableTraget);
+            }
+            else if (target.AssignableNodeType != AssignableNodeType.ConstantPointer)
+            {
+                Variable pointer;
 
-            var updatedExp = expression.UpdateContext(context.GetChild(), (Variable)updatedTarget.StaticTarget);
-            //if (updatedTarget.IsStaticTarget && updatedTarget.StaticTarget is Variable varTarget)
-            //{
-            //    updatedExp = expression.UpdateContext(context.GetChild(), varTarget);
-            //}
-            //else if (!updatedExp.IsStaticResult)
-            //{
-            //    (_, tempVariableExp) = context.memoryManager.CreateTempVariable(updatedExp.ResultType);
-            //    updatedExp = expression.UpdateContext(context.GetChild(), tempVariableExp);
-            //}
+                if (target.AssignableNodeType == AssignableNodeType.VariablePointer)
+                {
+                    updatedTarget = target.UpdateContext(context.GetChild());
+                    pointer = updatedTarget.VariableTraget;
+                }
+                else if (target.AssignableNodeType == AssignableNodeType.CalculatedPointer)
+                {
+                    (_, pointer) = context.memoryManager.CreateTempVariable(target.TargetType);
+                    updatedTarget = target.UpdateContext(context.GetChild(), pointer);
+                }
 
-            return new AssignNode(updatedTarget, updatedExp, tempVariableTarget, tempVariableExp);
+                if (expression.IsConstantResult)
+                {
+                    // TODO
+                    throw new NotImplementedException();
+                }
+                else if (expression.IsVariableResult)
+                {
+                    // TODO
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    // TODO
+                    throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                if (expression.IsConstantResult)
+                {
+                    // TODO
+                    throw new NotImplementedException();
+                }
+                else if (expression.IsVariableResult)
+                {
+                    // TODO
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    // TODO
+                    throw new NotImplementedException();
+                }
+            }
+
+            return new UpdatedAssignNode(updatedTarget, updatedExpression);
+        }
+    }
+
+    internal class UpdatedAssignNode : UpdatedSemanticNode
+    {
+        private readonly UpdatedAssignableNode target;
+        private readonly UpdatedResultableNode expression;
+
+        public UpdatedAssignNode(UpdatedAssignableNode target, UpdatedResultableNode expression)
+        {
+            this.target = target;
+            this.expression = expression;
         }
 
         public override AssemblerCommand[] ToCode()
@@ -84,28 +126,10 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes.AssignNodes
             // TODO
             // Сделать проверку на присвоение по указателю. Присвоение по константе только по указателю.
 
-            //Data targetResult;
-            //if (target.IsStaticTarget)
-            //    targetResult = target.StaticTarget;
-            //else
-            //    targetResult = tempVariableTarget;
-
-            //Data expResult;
-            //if (expression.IsStaticResult)
-            //    expResult = expression.StaticResult;
-            //else
-            //    expResult = tempVariableExp;
-
-            //IEnumerable<AssemblerCommand> commands = target.ToCode();
-            IEnumerable<AssemblerCommand> commands = Array.Empty<AssemblerCommand>();
-
-            //if (expression.IsStaticResult && expression.StaticResult is Constant constResult && target.IsStaticTarget && target.StaticTarget is Variable varTarget)
-            //{
-            //    commands = commands.Concat(MemoryManager.MoveOrPut(constResult, varTarget));
-            //}
-
-            commands = commands.Concat(expression.ToCode());
-            return commands.ToArray();
+            var commands = target.ToCode()
+                .Concat(expression.ToCode())
+                .ToArray();
+            return commands;
         }
     }
 }

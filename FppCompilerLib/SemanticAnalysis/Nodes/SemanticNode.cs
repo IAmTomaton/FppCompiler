@@ -2,12 +2,18 @@
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes
 {
-    internal abstract class SemanticNode
+    internal abstract class InitedSemanticNode
     {
-        public abstract override int GetHashCode();
-        public abstract override bool Equals(object? obj);
-        public abstract SemanticNode UpdateTypes(Context context);
-        public abstract SemanticNode UpdateContext(Context context);
+        public abstract TypedSemanticNode UpdateTypes(Context context);
+    }
+
+    internal abstract class TypedSemanticNode
+    {
+        public abstract UpdatedSemanticNode UpdateContext(Context context);
+    }
+
+    internal abstract class UpdatedSemanticNode
+    {
         public abstract AssemblerCommand[] ToCode();
     }
 }

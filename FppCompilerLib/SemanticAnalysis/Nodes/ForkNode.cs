@@ -6,135 +6,151 @@ using FppCompilerLib.SyntacticalAnalysis;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes
 {
-    internal class Fork
+
+    internal class InitedForkNode : InitedSemanticNode
     {
-        public readonly ResultableNode condition;
-        public readonly BodyNode body;
-        public readonly Variable? tempVariable;
+        private readonly InitedFork[] forks;
 
-        public Fork(ResultableNode condition, BodyNode body)
-        {
-            this.condition = condition;
-            this.body = body;
-        }
-
-        public Fork(ResultableNode condition, BodyNode body, Variable tempVariable)
-        {
-            this.condition = condition;
-            this.body = body;
-            this.tempVariable = tempVariable;
-        }
-
-        public Fork Copy() => new Fork(condition, body, tempVariable);
-
-        public override bool Equals(object? obj)
-        {
-            if (obj == null) return false;
-            if (obj is not Fork other) return false;
-            if (condition.Equals(other.condition)) return false;
-            return body.Equals(other.body);
-        }
-
-        public override int GetHashCode()
-        {
-            return condition.GetHashCode() * 37 + body.GetHashCode();
-        }
-    }
-
-    internal class ForkNode : SemanticNode
-    {
-        private readonly Fork[] forks;
-
-        public ForkNode(Fork[] forks)
+        public InitedForkNode(InitedFork[] forks)
         {
             this.forks = forks;
         }
 
-        public static ForkNode Parce(NonTerminalNode node, RuleToNodeParseTable parceTable)
+        public static InitedForkNode Parce(NonTerminalNode node, RuleToNodeParseTable parceTable)
         {
-            var condition = parceTable.Parse<ResultableNode>(node.childs[2].AsNonTerminalNode);
-            var body = parceTable.Parse<BodyNode>(node.childs[5].AsNonTerminalNode);
-            var forks = new List<Fork> { new Fork(condition, body) };
+            var condition = parceTable.Parse<InitedResultableNode>(node.childs[2].AsNonTerminalNode);
+            var body = parceTable.Parse<InitedBodyNode>(node.childs[5].AsNonTerminalNode);
+            var forks = new List<InitedFork> { new InitedFork(condition, body) };
 
             node = node.childs[7].AsNonTerminalNode;
             while (node.childs.Length > 0 && node.childs[1].AsTerminalNode.RealValue == "if")
             {
-                condition = parceTable.Parse<ResultableNode>(node.childs[3].AsNonTerminalNode);
-                body = parceTable.Parse<BodyNode>(node.childs[6].AsNonTerminalNode);
-                forks.Add(new Fork(condition, body));
+                condition = parceTable.Parse<InitedResultableNode>(node.childs[3].AsNonTerminalNode);
+                body = parceTable.Parse<InitedBodyNode>(node.childs[6].AsNonTerminalNode);
+                forks.Add(new InitedFork(condition, body));
                 node = node.childs.Last().AsNonTerminalNode;
             }
 
             if (node.childs.Length > 0 && node.childs[1].AsTerminalNode.RealValue != "if")
             {
-                body = parceTable.Parse<BodyNode>(node.childs[2].AsNonTerminalNode);
-                condition = new ConstantNode("true");
-                forks.Add(new Fork(condition, body));
+                body = parceTable.Parse<InitedBodyNode>(node.childs[2].AsNonTerminalNode);
+                condition = new InitedConstantNode("true");
+                forks.Add(new InitedFork(condition, body));
             }
 
-            return new ForkNode(forks.ToArray());
+            return new InitedForkNode(forks.ToArray());
         }
 
-        public override ForkNode UpdateTypes(Context context)
+        public override TypedForkNode UpdateTypes(Context context)
         {
             var typedForks = forks.Select(fork => UpdateTypesFork(fork, context)).ToArray();
-            return new ForkNode(typedForks);
+            return new TypedForkNode(typedForks);
         }
 
-        private static Fork UpdateTypesFork(Fork fork, Context context)
+        private static TypedFork UpdateTypesFork(InitedFork fork, Context context)
         {
             var condition = fork.condition.UpdateTypes(context.GetChild());
             if (condition.ResultType is not Bool)
                 throw new ArgumentException("The result of the expression for the condition should be bool");
             var body = fork.body.UpdateTypes(context.GetChild());
-            return new Fork(condition, body);
+            return new TypedFork(condition, body);
+        }
+    }
+
+    internal class InitedFork
+    {
+        public readonly InitedResultableNode condition;
+        public readonly InitedBodyNode body;
+
+        public InitedFork(InitedResultableNode condition, InitedBodyNode body)
+        {
+            this.condition = condition;
+            this.body = body;
+        }
+    }
+
+    internal class TypedForkNode : TypedSemanticNode
+    {
+        private readonly TypedFork[] forks;
+
+        public TypedForkNode(TypedFork[] forks)
+        {
+            this.forks = forks;
         }
 
-        public override ForkNode UpdateContext(Context context)
+        public override UpdatedForkNode UpdateContext(Context context)
         {
-            var updatedForks = forks
+            var typedForks = forks
                 .Where(
                 fork =>
                 {
-                    var updatedCond = fork.condition.UpdateContext(context.GetChild());
-                    return !(updatedCond.IsStaticResult && updatedCond.StaticResult is Constant constCond && constCond.machineValues[0] == 0);
+                    // If the condition is always false
+                    return !(fork.condition.IsConstantResult && fork.condition.GetConstantResult.machineValues[0] == 0);
                 })
                 .TakeWhile(
                 fork =>
                 {
-                    var updatedCond = fork.condition.UpdateContext(context.GetChild());
-                    return !(updatedCond.IsStaticResult && updatedCond.StaticResult is Constant constCond && constCond.machineValues[0] != 0);
+                    // Drop all remaining conditions if a condition that is always true is found
+                    return !(fork.condition.IsConstantResult && fork.condition.GetConstantResult.machineValues[0] != 0);
                 });
+
             var constTrue = forks
                 .FirstOrDefault(
                 fork =>
                 {
-                    var updatedCond = fork.condition.UpdateContext(context.GetChild());
-                    return updatedCond.IsStaticResult && updatedCond.StaticResult is Constant constCond && constCond.machineValues[0] != 0;
+                    // Take condition that is always true if it was found
+                    return fork.condition.IsConstantResult && fork.condition.GetConstantResult.machineValues[0] != 0;
                 });
             if (constTrue != null)
-                updatedForks = updatedForks.Append(constTrue);
-            updatedForks = updatedForks
-                .Select(fork => UpdateContextFork(fork, context.GetChild()));
-            return new ForkNode(updatedForks.ToArray());
+                typedForks = typedForks.Append(constTrue);
+
+            var updatedForks = typedForks
+                .Select(fork => UpdateContextFork(fork, context.GetChild()))
+                .ToArray();
+            return new UpdatedForkNode(updatedForks);
         }
 
-        private static Fork UpdateContextFork(Fork fork, Context context)
+        private static UpdatedFork UpdateContextFork(TypedFork fork, Context context)
         {
-            var condition = fork.condition.UpdateContext(context.GetChild());
-            BodyNode body;
-
-            if (!condition.IsStaticResult)
+            UpdatedResultableNode? updatedCondition = null;
+            Variable? conditionVariable = null;
+            if (fork.condition.IsConstantResult) { }
+            else if (fork.condition.IsVariableResult)
+            {
+                var updatedArg = fork.condition.UpdateContext(context.GetChild(), null);
+                conditionVariable = updatedArg.GetVariableResult;
+            }
+            else
             {
                 var conditionContext = context.GetChild();
-                (_, var tempVariable) = conditionContext.memoryManager.CreateTempVariable(new Bool());
-                condition = fork.condition.UpdateContext(conditionContext, tempVariable);
-                body = fork.body.UpdateContext(context.GetChild());
-                return new Fork(condition, body, tempVariable);
+                (_, conditionVariable) = conditionContext.memoryManager.CreateTempVariable(new Bool());
+                updatedCondition = fork.condition.UpdateContext(conditionContext, conditionVariable);
             }
 
-            body = fork.body.UpdateContext(context.GetChild());
-            return new Fork(condition, body);
+            var updatedBody = fork.body.UpdateContext(context.GetChild());
+            return new UpdatedFork(updatedCondition, updatedBody, conditionVariable);
+        }
+    }
+
+    internal class TypedFork
+    {
+        public readonly TypedResultableNode condition;
+        public readonly TypedBodyNode body;
+
+        public TypedFork(TypedResultableNode condition, TypedBodyNode body)
+        {
+            this.condition = condition;
+            this.body = body;
+        }
+    }
+
+    internal class UpdatedForkNode : UpdatedSemanticNode
+    {
+        private readonly UpdatedFork[] forks;
+
+        public UpdatedForkNode(UpdatedFork[] forks)
+        {
+            this.forks = forks;
         }
 
         public override AssemblerCommand[] ToCode()
@@ -146,39 +162,41 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes
             return commands.ToArray();
         }
 
-        private static IEnumerable<AssemblerCommand> ForkToCode(Fork fork, string endLabel, bool isLast)
+        private static IEnumerable<AssemblerCommand> ForkToCode(UpdatedFork fork, string endLabel, bool isLast)
         {
             var skipLabel = "skip_" + Guid.NewGuid().ToString();
 
             var commands = Enumerable.Empty<AssemblerCommand>();
-            if (!fork.condition.IsStaticResult)
+            if (fork.condition != null)
             {
                 commands = commands
                     .Concat(fork.condition.ToCode())
-                    .Append(AssemblerCommand.JmpIfEq0(fork.tempVariable.address, skipLabel));
+                    .Append(AssemblerCommand.JmpIfEq0(fork.conditionVariable.address, skipLabel));
             }
-            else if (fork.condition.StaticResult is Variable variableCond)
+            else if (fork.conditionVariable != null)
             {
-                commands = commands.Append(AssemblerCommand.JmpIfEq0(variableCond.address, skipLabel));
+                commands = commands.Append(AssemblerCommand.JmpIfEq0(fork.conditionVariable.address, skipLabel));
             }
+
             commands = commands.Concat(fork.body.ToCode());
             if (!isLast)
                 commands = commands.Append(AssemblerCommand.Jmp(endLabel));
             commands = commands.Append(AssemblerCommand.Label(skipLabel));
             return commands;
         }
+    }
 
-        public override bool Equals(object? obj)
-        {
-            if (obj == null) return false;
-            if (obj is not ForkNode other) return false;
-            if (forks.Length != other.forks.Length) return false;
-            return forks.SequenceEqual(other.forks);
-        }
+    internal class UpdatedFork
+    {
+        public readonly UpdatedResultableNode? condition;
+        public readonly UpdatedBodyNode body;
+        public readonly Variable? conditionVariable;
 
-        public override int GetHashCode()
+        public UpdatedFork(UpdatedResultableNode? condition, UpdatedBodyNode body, Variable? conditionVariable)
         {
-            return forks.Select(ch => ch.GetHashCode()).Aggregate((a, b) => a * 37 + b);
+            this.condition = condition;
+            this.body = body;
+            this.conditionVariable = conditionVariable;
         }
     }
 }

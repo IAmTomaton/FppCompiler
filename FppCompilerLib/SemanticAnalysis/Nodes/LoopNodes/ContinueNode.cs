@@ -3,45 +3,43 @@ using FppCompilerLib.SyntacticalAnalysis;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes.LoopNodes
 {
-    internal class ContinueNode : SemanticNode
+    internal class InitedContinueNode : InitedSemanticNode
     {
-        private readonly string? continueLabel;
+        public InitedContinueNode() { }
 
-        public ContinueNode() { }
+        public static InitedContinueNode Parse(NonTerminalNode _, RuleToNodeParseTable __)
+        {
+            return new InitedContinueNode();
+        }
 
-        public ContinueNode(string continueLabel)
+        public override TypedContinueNode UpdateTypes(Context context)
+        {
+            return new TypedContinueNode();
+        }
+    }
+
+    internal class TypedContinueNode : TypedSemanticNode
+    {
+        public TypedContinueNode() { }
+
+        public override UpdatedContinueNode UpdateContext(Context context)
+        {
+            return new UpdatedContinueNode(context.loopManager.ContinueLabel);
+        }
+    }
+
+    internal class UpdatedContinueNode : UpdatedSemanticNode
+    {
+        private readonly string continueLabel;
+
+        public UpdatedContinueNode(string continueLabel)
         {
             this.continueLabel = continueLabel;
-        }
-
-        public static ContinueNode Parse(NonTerminalNode _, RuleToNodeParseTable __)
-        {
-            return new ContinueNode();
-        }
-
-        public override ContinueNode UpdateTypes(Context context)
-        {
-            return this;
-        }
-
-        public override ContinueNode UpdateContext(Context context)
-        {
-            return new ContinueNode(context.loopManager.ContinueLabel);
         }
 
         public override AssemblerCommand[] ToCode()
         {
             return new AssemblerCommand[] { AssemblerCommand.Jmp(continueLabel) };
-        }
-
-        public override bool Equals(object? obj)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
         }
     }
 }

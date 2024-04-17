@@ -2,38 +2,48 @@
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes
 {
-    internal class AssemblerInsertNode : SemanticNode
+    internal class InitedAssemblerInsertNode : InitedSemanticNode
     {
         private readonly AssemblerCommand[] commands;
 
-        public AssemblerInsertNode(AssemblerCommand[] commands)
+        public InitedAssemblerInsertNode(AssemblerCommand[] commands)
         {
             this.commands = commands;
         }
 
-        public override SemanticNode UpdateTypes(Context context)
+        public override TypedAssemblerInsertNode UpdateTypes(Context context)
         {
-            return this;
+            return new TypedAssemblerInsertNode(commands);
+        }
+    }
+
+    internal class TypedAssemblerInsertNode : TypedSemanticNode
+    {
+        private readonly AssemblerCommand[] commands;
+
+        public TypedAssemblerInsertNode(AssemblerCommand[] commands)
+        {
+            this.commands = commands;
         }
 
-        public override SemanticNode UpdateContext(Context context)
+        public override UpdatedAssemblerInsertNode UpdateContext(Context context)
         {
-            return this;
+            return new UpdatedAssemblerInsertNode(commands);
+        }
+    }
+
+    internal class UpdatedAssemblerInsertNode : UpdatedSemanticNode
+    {
+        private readonly AssemblerCommand[] commands;
+
+        public UpdatedAssemblerInsertNode(AssemblerCommand[] commands)
+        {
+            this.commands = commands;
         }
 
         public override AssemblerCommand[] ToCode()
         {
             return commands;
-        }
-
-        public override bool Equals(object? obj)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
         }
     }
 }

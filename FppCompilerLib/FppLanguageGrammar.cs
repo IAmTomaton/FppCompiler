@@ -22,7 +22,7 @@ namespace FppCompilerLib
 
         private void GenerateGrammar()
         {
-            AddRule(body, bodyAdd, BodyNode.Parse);
+            AddRule(body, bodyAdd, InitedBodyNode.Parse);
             AddRule(bodyAdd, new Token[] { bodyLine, new Terminal(";"), bodyAdd });
             AddRule(bodyAdd, new Token[] { fork, bodyAdd });
             AddRule(bodyAdd, new Token[] { loopWhile, bodyAdd });
@@ -35,28 +35,28 @@ namespace FppCompilerLib
             AddRule(bodyLine, continueCmd, PassParse(0));
             AddRule(bodyLine, breakCmd, PassParse(0));
 
-            AddRule(createVariableLine, new Token[] { typeExpression, Terminal.Word, assignVariableS }, CreateVariableNode.Parse);
+            AddRule(createVariableLine, new Token[] { typeExpression, Terminal.Word, assignVariableS }, InitedCreateVariableNode.Parse);
             AddRule(assignVariableS, new Token[] { new Terminal("="), expression });
             AddLambdaRule(assignVariableS);
 
-            AddRule(assignVariableLine, new Token[] { assignVariableLineArg, new Terminal("="), expression }, AssignNode.Parse);
-            AddRule(assignVariableLineArg, Terminal.Word, AssignableVariableNode.Parse);
+            AddRule(assignVariableLine, new Token[] { assignVariableLineArg, new Terminal("="), expression }, InitedAssignNode.Parse);
+            AddRule(assignVariableLineArg, Terminal.Word, InitedAssignableVariableNode.Parse);
             //AddRule(assignVariableLineArg, new Token[] { new Terminal("*"), assignVariableLineArg }));
 
             // Math expression
-            AddRule(expression, new Token[] { expressionArg, expressionS }, BinaryOperatorNode.Parse);
+            AddRule(expression, new Token[] { expressionArg, expressionS }, InitedBinaryOperatorNode.Parse);
 
-            AddRule(expressionArg, new Token[] { expressionArgS, postfixOperator }, UnaryOperatorNode.ParsePostfix);
+            AddRule(expressionArg, new Token[] { expressionArgS, postfixOperator }, InitedUnaryOperatorNode.ParsePostfix);
             AddRule(postfixOperator, Terminal.UnaryOperator);
             AddLambdaRule(postfixOperator);
 
-            AddRule(expressionArg, new Token[] { new Terminal("-"), expressionArg }, UnaryOperatorNode.ParsePrefix);
-            AddRule(expressionArg, new Token[] { new Terminal("&"), expressionArg }, UnaryOperatorNode.ParsePrefix);
-            AddRule(expressionArg, new Token[] { new Terminal("*"), expressionArg }, UnaryOperatorNode.ParsePrefix);
-            AddRule(expressionArg, new Token[] { Terminal.UnaryOperator, expressionArg }, UnaryOperatorNode.ParsePrefix);
+            AddRule(expressionArg, new Token[] { new Terminal("-"), expressionArg }, InitedUnaryOperatorNode.ParsePrefix);
+            AddRule(expressionArg, new Token[] { new Terminal("&"), expressionArg }, InitedUnaryOperatorNode.ParsePrefix);
+            AddRule(expressionArg, new Token[] { new Terminal("*"), expressionArg }, InitedUnaryOperatorNode.ParsePrefix);
+            AddRule(expressionArg, new Token[] { Terminal.UnaryOperator, expressionArg }, InitedUnaryOperatorNode.ParsePrefix);
 
-            AddRule(expressionArgS, Terminal.Const, ConstantNode.Parse);
-            AddRule(expressionArgS, Terminal.Word, VariableNode.Parse);
+            AddRule(expressionArgS, Terminal.Const, InitedConstantNode.Parse);
+            AddRule(expressionArgS, Terminal.Word, InitedVariableNode.Parse);
             AddRule(expressionArgS, functionCall, PassParse(0));
             AddRule(expressionArgS, new Token[] { openingBrace, expression, closingBrace }, PassParse(1));
 
@@ -67,8 +67,8 @@ namespace FppCompilerLib
             AddLambdaRule(expressionS);
 
             // Type expression
-            AddRule(typeExpression, new Token[] { simpleType, additionType }, TypeNode.Parse);
-            AddRule(simpleType, Terminal.Type, SimpleTypeNode.Parse);
+            AddRule(typeExpression, new Token[] { simpleType, additionType }, InitedTypeNode.Parse);
+            AddRule(simpleType, Terminal.Type, InitedSimpleTypeNode.Parse);
             AddLambdaRule(additionType);
 
             // Fork
@@ -79,7 +79,7 @@ namespace FppCompilerLib
                     openingCurlyBrace, body, closingCurlyBrace,
                     forkAdd
                 },
-                ForkNode.Parce);
+                InitedForkNode.Parce);
             AddRule(forkAdd,
                 new Token[]
                 {
@@ -98,7 +98,7 @@ namespace FppCompilerLib
                     new Terminal("while"), openingBrace, expression, closingBrace,
                     openingCurlyBrace, body, closingCurlyBrace
                 },
-                WhileNode.Parse);
+                InitedWhileNode.Parse);
             // For
             AddRule(loopFor,
                 new Token[]
@@ -106,12 +106,12 @@ namespace FppCompilerLib
                     new Terminal("for"), openingBrace, bodyLine, new Terminal(";"), expression, new Terminal(";"), bodyLine, closingBrace,
                     openingCurlyBrace, body, closingCurlyBrace
                 },
-                ForNode.Parse);
-            AddRule(continueCmd, new Terminal("continue"), ContinueNode.Parse);
-            AddRule(breakCmd, new Terminal("break"), BreakNode.Parse);
+                InitedForNode.Parse);
+            AddRule(continueCmd, new Terminal("continue"), InitedContinueNode.Parse);
+            AddRule(breakCmd, new Terminal("break"), InitedBreakNode.Parse);
 
             // Function call
-            AddRule(functionCall, new Token[] { Terminal.Word, openingBrace, functionCallArg, closingBrace }, FunctionCallNode.Parse);
+            AddRule(functionCall, new Token[] { Terminal.Word, openingBrace, functionCallArg, closingBrace }, InitedFunctionCallNode.Parse);
             AddLambdaRule(functionCallArg);
             AddRule(functionCallArg, expression);
             AddRule(functionCallArg, new Token[] { expression, new Terminal(","), functionCallArg });
@@ -137,23 +137,23 @@ namespace FppCompilerLib
             Grammar.AddRule(new Rule(source));
         }
 
-        private void AddRule(Rule rule, Func<NonTerminalNode, RuleToNodeParseTable, SemanticNode> parser)
+        private void AddRule(Rule rule, Func<NonTerminalNode, RuleToNodeParseTable, InitedSemanticNode> parser)
         {
             Grammar.AddRule(rule);
             ParseTable.Add(rule, parser);
         }
 
-        private void AddRule(NonTerminal source, Token[] tokens, Func<NonTerminalNode, RuleToNodeParseTable, SemanticNode> parser)
+        private void AddRule(NonTerminal source, Token[] tokens, Func<NonTerminalNode, RuleToNodeParseTable, InitedSemanticNode> parser)
         {
             AddRule(new Rule(source, tokens), parser);
         }
 
-        private void AddRule(NonTerminal source, Token token, Func<NonTerminalNode, RuleToNodeParseTable, SemanticNode> parser)
+        private void AddRule(NonTerminal source, Token token, Func<NonTerminalNode, RuleToNodeParseTable, InitedSemanticNode> parser)
         {
             AddRule(new Rule(source, token), parser);
         }
 
-        private static Func<NonTerminalNode, RuleToNodeParseTable, SemanticNode> PassParse(int i) => (node, parseTable) => parseTable.Parse((NonTerminalNode)node.childs[i]);
+        private static Func<NonTerminalNode, RuleToNodeParseTable, InitedSemanticNode> PassParse(int i) => (node, parseTable) => parseTable.Parse((NonTerminalNode)node.childs[i]);
 
         private static readonly NonTerminal body = new("body");
         private static readonly NonTerminal bodyLine = new("body_line");

@@ -9,7 +9,7 @@ namespace FppCompilerLib.CodeGeneration
 
         }
 
-        public AssemblerCommand[] ToAssemblerCommands(SemanticNode rootNode)
+        public AssemblerCommand[] ToAssemblerCommands(UpdatedSemanticNode rootNode)
         {
             return rootNode.ToCode();
         }
@@ -37,7 +37,7 @@ namespace FppCompilerLib.CodeGeneration
             return machineCommands;
         }
 
-        public MachineCommand[] ToMachineCommands(SemanticNode rootNode)
+        public MachineCommand[] ToMachineCommands(UpdatedSemanticNode rootNode)
         {
             return ToMachineCommands(ToAssemblerCommands(rootNode));
         }

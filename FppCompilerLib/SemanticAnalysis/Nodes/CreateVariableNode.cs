@@ -6,70 +6,80 @@ using FppCompilerLib.SyntacticalAnalysis;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes
 {
-    internal class CreateVariableNode : SemanticNode
+    internal class InitedCreateVariableNode : InitedSemanticNode
     {
         private readonly string name;
-        private readonly TypeNode typeNode;
-        private readonly AssignNode? assignNode;
+        private readonly InitedTypeNode typeNode;
+        private readonly InitedAssignNode? assignNode;
 
-        public CreateVariableNode(TypeNode typeNode, string name, AssignNode? assignNode = null)
+        public InitedCreateVariableNode(InitedTypeNode typeNode, string name, InitedAssignNode? assignNode = null)
         {
             this.typeNode = typeNode;
             this.name = name;
             this.assignNode = assignNode;
         }
 
-        public static CreateVariableNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
+        public static InitedCreateVariableNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
         {
             var name = ((TerminalNode)node.childs[1]).RealValue;
-            var typeNode = parceTable.Parse<TypeNode>((NonTerminalNode)node.childs[0]);
+            var typeNode = parceTable.Parse<InitedTypeNode>((NonTerminalNode)node.childs[0]);
 
-            AssignNode? assignNode = null;
+            InitedAssignNode? assignNode = null;
             var assignChilds = node.childs[2].AsNonTerminalNode.childs;
             if (assignChilds.Length > 0)
             {
-                var expression = parceTable.Parse<ResultableNode>(assignChilds[1].AsNonTerminalNode);
-                assignNode = new AssignNode(new AssignableVariableNode(name), expression);
+                var expression = parceTable.Parse<InitedResultableNode>(assignChilds[1].AsNonTerminalNode);
+                assignNode = new InitedAssignNode(new InitedAssignableVariableNode(name), expression);
             }
 
-            return new CreateVariableNode(typeNode, name, assignNode);
+            return new InitedCreateVariableNode(typeNode, name, assignNode);
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (obj == null) return false;
-            if (obj is not CreateVariableNode other) return false;
-            return name == other.name && typeNode.Equals(other.typeNode) &&
-                (assignNode != null ? assignNode.Equals(other.assignNode) : other.assignNode == null);
-        }
-
-        public override int GetHashCode()
-        {
-            return name.GetHashCode() + typeNode.GetHashCode() * 37 +
-                (assignNode != null ? assignNode.GetHashCode() : 0) * 37 * 37;
-        }
-
-        public override CreateVariableNode UpdateTypes(Context context)
+        public override TypedCreateVariableNode UpdateTypes(Context context)
         {
             var typedTypeNode = typeNode.UpdateTypes(context.GetChild());
-            context.memoryManager.AddVariable(name, typedTypeNode.GetTypeInfo());
+            context.memoryManager.AddVariable(name, typedTypeNode.TypeInfo);
 
             var typedAssignNode = assignNode?.UpdateTypes(context.GetChild());
 
-            return new CreateVariableNode(typedTypeNode, name, typedAssignNode);
+            return new TypedCreateVariableNode(typedTypeNode, name, typedAssignNode);
+        }
+    }
+
+    internal class TypedCreateVariableNode : TypedSemanticNode
+    {
+        private readonly string name;
+        private readonly TypedTypeNode typeNode;
+        private readonly TypedAssignNode? assignNode;
+
+        public TypedCreateVariableNode(TypedTypeNode typeNode, string name, TypedAssignNode? assignNode)
+        {
+            this.typeNode = typeNode;
+            this.name = name;
+            this.assignNode = assignNode;
         }
 
-        public override CreateVariableNode UpdateContext(Context context)
+        public override UpdatedCreateVariableNode UpdateContext(Context context)
         {
-            context.memoryManager.AddVariable(name, typeNode.GetTypeInfo());
+            context.memoryManager.AddVariable(name, typeNode.TypeInfo);
             var updatedAssignNode = assignNode?.UpdateContext(context.GetChild());
 
-            return new CreateVariableNode(typeNode, name, updatedAssignNode);
+            return new UpdatedCreateVariableNode(updatedAssignNode);
+        }
+    }
+
+    internal class UpdatedCreateVariableNode : UpdatedSemanticNode
+    {
+        private readonly UpdatedAssignNode? assignNode;
+
+        public UpdatedCreateVariableNode(UpdatedAssignNode? assignNode = null)
+        {
+            this.assignNode = assignNode;
         }
 
         public override AssemblerCommand[] ToCode()
         {
-            IEnumerable<AssemblerCommand> commands = typeNode.ToCode();
+            var commands = Enumerable.Empty<AssemblerCommand>();
             if (assignNode is not null)
                 commands = commands.Concat(assignNode.ToCode());
             return commands.ToArray();

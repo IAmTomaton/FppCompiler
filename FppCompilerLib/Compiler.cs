@@ -30,10 +30,10 @@ namespace FppCompilerLib
             var rootNode = fppLanguageGrammar.ParseTable.Parse(rootParseNode);
 
             var semanticAnalyzer = new SemanticAnalyzer();
-            rootNode = semanticAnalyzer.Parse(rootNode);
+            var updatedRootNode = semanticAnalyzer.Parse(rootNode);
 
             var codeGenerator = new CodeGenerator();
-            var machineCommands = codeGenerator.ToMachineCommands(rootNode);
+            var machineCommands = codeGenerator.ToMachineCommands(updatedRootNode);
 
             var programPackager = new ProgramPackager();
             var blueprint = programPackager.PackProgram(machineCommands);

@@ -3,40 +3,30 @@ using FppCompilerLib.SemanticAnalysis.TypeManagement;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes
 {
-    internal abstract class ResultableNode : SemanticNode
+    internal abstract class InitedResultableNode : InitedSemanticNode
     {
-        protected Variable? target;
+        public override abstract TypedResultableNode UpdateTypes(Context context);
+    }
 
-        protected TypeInfo? resultType;
-        public TypeInfo ResultType
-        {
-            get
-            {
-                if (resultType == null) throw new InvalidOperationException($"Call UpdateTypes before calling ResultType");
-                return resultType;
-            }
-        }
-        protected Data? staticResult;
-        public Data StaticResult
-        {
-            get
-            {
-                if (staticResult == null) throw new InvalidOperationException($"Call UpdateContext before calling StaticResult");
-                return staticResult;
-            }
-        }
-        protected bool? isStaticResult;
-        public bool IsStaticResult
-        {
-            get
-            {
-                if (isStaticResult == null) throw new InvalidOperationException($"Call UpdateContext before calling IsStaticResult");
-                return (bool)isStaticResult;
-            }
-        }
+    internal abstract class TypedResultableNode : TypedSemanticNode
+    {
+        public Constant GetConstantResult => ConstantResult ?? throw new InvalidOperationException("Node does not have constant result");
+        public bool IsConstantResult => ConstantResult != null;
+        public virtual bool IsVariableResult => false;
 
-        public override ResultableNode UpdateContext(Context context) => UpdateContext(context, null);
-        public abstract override ResultableNode UpdateTypes(Context context);
-        public abstract ResultableNode UpdateContext(Context context, Variable? target);
+        protected virtual Constant? ConstantResult => null;
+
+        public abstract TypeInfo ResultType { get; }
+        public abstract UpdatedResultableNode UpdateContext(Context context, Variable? target);
+
+        public override UpdatedResultableNode UpdateContext(Context context) => UpdateContext(context, null);
+    }
+
+    internal abstract class UpdatedResultableNode : UpdatedSemanticNode
+    {
+        public Variable GetVariableResult => VariableResult ?? throw new InvalidOperationException("Node does not have variable result");
+        public bool IsVariableResult => VariableResult != null;
+
+        protected virtual Variable? VariableResult => null;
     }
 }

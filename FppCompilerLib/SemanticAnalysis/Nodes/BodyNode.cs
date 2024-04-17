@@ -1,36 +1,25 @@
 ﻿using FppCompilerLib.CodeGeneration;
 using FppCompilerLib.SyntacticalAnalysis;
+using System.Collections.ObjectModel;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes
 {
-    internal class BodyNode : SemanticNode
+    internal class InitedBodyNode : InitedSemanticNode
     {
-        private readonly SemanticNode[] childs;
+        public ReadOnlyCollection<InitedSemanticNode> Childs => Array.AsReadOnly(childs);
+        private readonly InitedSemanticNode[] childs;
 
-        public BodyNode(SemanticNode[] childs)
+        public InitedBodyNode(InitedSemanticNode[] childs)
         {
             this.childs = childs;
         }
 
-        public static BodyNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
+        public static InitedBodyNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
         {
-            return new BodyNode(ParceChilds((NonTerminalNode)node.childs[0], parceTable).ToArray());
+            return new InitedBodyNode(ParceChilds((NonTerminalNode)node.childs[0], parceTable).ToArray());
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (obj == null) return false;
-            if (obj is not BodyNode other) return false;
-            if (childs.Length != other.childs.Length) return false;
-            return childs.SequenceEqual(other.childs);
-        }
-
-        public override int GetHashCode()
-        {
-            return childs.Select(ch => ch.GetHashCode()).Aggregate((a, b) => a * 37 + b);
-        }
-
-        private static IEnumerable<SemanticNode> ParceChilds(NonTerminalNode node, RuleToNodeParseTable parceTable)
+        private static IEnumerable<InitedSemanticNode> ParceChilds(NonTerminalNode node, RuleToNodeParseTable parceTable)
         {
             while (node.childs.Length > 0)
             {
@@ -39,25 +28,47 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes
             }
         }
 
-        public override BodyNode UpdateTypes(Context context)
+        public override TypedBodyNode UpdateTypes(Context context)
         {
             var typedChilds = childs.Select(child => child.UpdateTypes(context)).ToArray();
-            return new BodyNode(typedChilds);
+            return new TypedBodyNode(typedChilds);
+        }
+    }
+
+    internal class TypedBodyNode : TypedSemanticNode
+    {
+        public ReadOnlyCollection<TypedSemanticNode> Childs => Array.AsReadOnly(childs);
+        private readonly TypedSemanticNode[] childs;
+
+        public TypedBodyNode(TypedSemanticNode[] childs)
+        {
+            this.childs = childs;
         }
 
-        public override BodyNode UpdateContext(Context context)
+        public override UpdatedBodyNode UpdateContext(Context context)
         {
             var updatedChilds = childs.Select(child => child.UpdateContext(GetRightContext(child, context))).ToArray();
-            return new BodyNode(updatedChilds);
+            return new UpdatedBodyNode(updatedChilds);
         }
 
-        private static Context GetRightContext(SemanticNode node, Context context)
+        private static Context GetRightContext(TypedSemanticNode node, Context context)
         {
-            if (node is CreateVariableNode)
+            if (node is TypedCreateVariableNode)
             {
                 return context;
             }
             return context.GetChild();
+        }
+    }
+
+    internal class UpdatedBodyNode : UpdatedSemanticNode
+    {
+        public ReadOnlyCollection<UpdatedSemanticNode> Childs => Array.AsReadOnly(childs);
+        private readonly UpdatedSemanticNode[] childs;
+
+        public UpdatedBodyNode(UpdatedSemanticNode[] childs)
+        {
+            this.childs = childs;
         }
 
         public override AssemblerCommand[] ToCode()

@@ -1,55 +1,37 @@
-﻿using FppCompilerLib.CodeGeneration;
-using FppCompilerLib.SemanticAnalysis.TypeManagement;
+﻿using FppCompilerLib.SemanticAnalysis.TypeManagement;
 using FppCompilerLib.SyntacticalAnalysis;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes.TypeNodes
 {
-    internal class SimpleTypeNode : TypeNode
+    internal class InitedSimpleTypeNode : InitedTypeNode
     {
         private readonly string name;
 
-        private TypeInfo? typeInfo;
-
-        public SimpleTypeNode(string name, TypeInfo? typeInfo = null)
+        public InitedSimpleTypeNode(string name)
         {
             this.name = name;
-            this.typeInfo = typeInfo;
         }
 
-        public static new SimpleTypeNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
+        public static new InitedSimpleTypeNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
         {
-            return new SimpleTypeNode(((TerminalNode)node.childs[0]).RealValue);
+            return new InitedSimpleTypeNode(((TerminalNode)node.childs[0]).RealValue);
         }
 
-        public override bool Equals(object? obj)
-        {
-            if (obj == null) return false;
-            if (obj is not SimpleTypeNode other) return false;
-            return name == other.name;
-        }
-
-        public override int GetHashCode()
-        {
-            return name.GetHashCode();
-        }
-
-        public override TypeInfo GetTypeInfo()
-        {
-            if (typeInfo is null) throw new InvalidOperationException($"Call UpdateTypes before calling GetTypeInfo");
-            return typeInfo;
-        }
-
-        public override SimpleTypeNode UpdateTypes(Context context)
+        public override TypedSimpleTypeNode UpdateTypes(Context context)
         {
             var typeInfo = context.typeManager.ResolveType(name);
-            return new SimpleTypeNode(name, typeInfo);
+            return new TypedSimpleTypeNode(typeInfo);
         }
+    }
 
-        public override TypeNode UpdateContext(Context context)
+    internal class TypedSimpleTypeNode : TypedTypeNode
+    {
+        public override TypeInfo TypeInfo => typeInfo;
+        private readonly TypeInfo typeInfo;
+
+        public TypedSimpleTypeNode(TypeInfo typeInfo)
         {
-            throw new InvalidOperationException();
+            this.typeInfo = typeInfo;
         }
-
-        public override AssemblerCommand[] ToCode() => Array.Empty<AssemblerCommand>();
     }
 }

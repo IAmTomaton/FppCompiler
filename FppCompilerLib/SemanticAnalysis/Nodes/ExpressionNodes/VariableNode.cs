@@ -2,75 +2,70 @@
 using FppCompilerLib.SemanticAnalysis.MemoryManagement;
 using FppCompilerLib.SemanticAnalysis.TypeManagement;
 using FppCompilerLib.SyntacticalAnalysis;
+using System.Reflection.Metadata;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes
 {
-    internal class VariableNode : ResultableNode
+    internal class InitedVariableNode : InitedResultableNode
     {
+        public string Name => name;
         private readonly string name;
-        public new Variable StaticResult
-        {
-            get
-            {
-                if (staticResult == null) throw new InvalidOperationException($"Call UpdateContext before calling StaticResult");
-                return staticResult as Variable;
-            }
-        }
 
-        public VariableNode(string name)
+        public InitedVariableNode(string name)
         {
             this.name = name;
         }
 
-        private VariableNode(string name, TypeInfo resultType) : this(name)
+        public static InitedVariableNode Parse(NonTerminalNode node, RuleToNodeParseTable _)
         {
+            return new InitedVariableNode(((TerminalNode)node.childs[0]).RealValue);
+        }
+
+        public override TypedVariableNode UpdateTypes(Context context)
+        {
+            var resultType = context.memoryManager.GetVariable(name).TypeInfo;
+            return new TypedVariableNode(name, resultType);
+        }
+    }
+
+    internal class TypedVariableNode : TypedResultableNode
+    {
+        public override TypeInfo ResultType => resultType;
+        public override bool IsVariableResult => true;
+
+        private readonly string name;
+        private readonly TypeInfo resultType;
+
+        public TypedVariableNode(string name, TypeInfo resultType)
+        {
+            this.name = name;
             this.resultType = resultType;
         }
 
-        private VariableNode(string name, Variable result) : this(name, result.TypeInfo)
-        {
-            isStaticResult = true;
-            staticResult = result;
-        }
-
-        private VariableNode(string name, Variable result, Variable target) : this(name, result)
-        {
-            this.target = target;
-        }
-
-        public static VariableNode Parse(NonTerminalNode node, RuleToNodeParseTable _)
-        {
-            return new VariableNode(((TerminalNode)node.childs[0]).RealValue);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            if (obj == null) return false;
-            if (obj is not VariableNode other) return false;
-            return name == other.name;
-        }
-
-        public override int GetHashCode()
-        {
-            return name.GetHashCode();
-        }
-
-        public override VariableNode UpdateTypes(Context context)
-        {
-            var resultType = context.memoryManager.GetVariable(name).TypeInfo;
-            return new VariableNode(name, resultType);
-        }
-
-        public override VariableNode UpdateContext(Context context, Variable? target)
+        public override UpdatedVariableNode UpdateContext(Context context, Variable? target)
         {
             var result = context.memoryManager.GetVariable(name);
-            return new VariableNode(name, result, target);
+            return new UpdatedVariableNode(result, target);
+        }
+    }
+
+    internal class UpdatedVariableNode : UpdatedResultableNode
+    {
+        protected override Variable VariableResult => variable;
+
+        private readonly Variable? target;
+        private readonly Variable variable;
+
+        public UpdatedVariableNode(Variable variable, Variable? target)
+        {
+            this.variable = variable;
+            this.target = target;
         }
 
         public override AssemblerCommand[] ToCode()
         {
             if (target != null)
-                return MemoryManager.MoveOrPut(StaticResult, target);
+                return MemoryManager.MoveOrPut(variable, target);
             return Array.Empty<AssemblerCommand>();
         }
     }

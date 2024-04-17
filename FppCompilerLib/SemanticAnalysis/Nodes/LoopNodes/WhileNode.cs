@@ -4,67 +4,85 @@ using FppCompilerLib.SyntacticalAnalysis;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes.LoopNodes
 {
-    internal class WhileNode : SemanticNode
+    internal class InitedWhileNode : InitedSemanticNode
     {
-        private readonly ForkNode fork;
+        private readonly InitedForkNode fork;
         private readonly string continueLabel;
         private readonly string breakLabel;
 
-        public WhileNode(ForkNode fork, string continueLabel, string breakLabel)
+        public InitedWhileNode(InitedForkNode fork, string continueLabel, string breakLabel)
         {
             this.fork = fork;
             this.continueLabel = continueLabel;
             this.breakLabel = breakLabel;
         }
 
-        public static WhileNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
+        public static InitedWhileNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
         {
             var guid = Guid.NewGuid().ToString();
             var continueLabel = "continue_" + guid;
             var breakLabel = "break_" + guid;
 
-            var condition = parceTable.Parse<ResultableNode>(node.childs[2].AsNonTerminalNode);
-            var loopBody = parceTable.Parse<BodyNode>(node.childs[5].AsNonTerminalNode);
+            var condition = parceTable.Parse<InitedResultableNode>(node.childs[2].AsNonTerminalNode);
+            var loopBody = parceTable.Parse<InitedBodyNode>(node.childs[5].AsNonTerminalNode);
 
-            var assemblerInsert = new AssemblerInsertNode(new AssemblerCommand[] { AssemblerCommand.Jmp(continueLabel) });
+            var assemblerInsert = new InitedAssemblerInsertNode(new AssemblerCommand[] { AssemblerCommand.Jmp(continueLabel) });
 
-            var forkBody = new BodyNode(new SemanticNode[] { loopBody, assemblerInsert });
+            var forkBody = new InitedBodyNode(new InitedSemanticNode[] { loopBody, assemblerInsert });
 
-            var fork = new ForkNode(new Fork[] { new Fork(condition, forkBody) });
+            var fork = new InitedForkNode(new InitedFork[] { new InitedFork(condition, forkBody) });
 
-            return new WhileNode(fork, continueLabel, breakLabel);
+            return new InitedWhileNode(fork, continueLabel, breakLabel);
         }
 
-        public override WhileNode UpdateTypes(Context context)
+        public override TypedWhileNode UpdateTypes(Context context)
         {
             var typedFork = fork.UpdateTypes(context.GetChild());
-            return new WhileNode(typedFork, continueLabel, breakLabel);
+            return new TypedWhileNode(typedFork, continueLabel, breakLabel);
+        }
+    }
+
+    internal class TypedWhileNode : TypedSemanticNode
+    {
+        private readonly TypedForkNode fork;
+        private readonly string continueLabel;
+        private readonly string breakLabel;
+
+        public TypedWhileNode(TypedForkNode fork, string continueLabel, string breakLabel)
+        {
+            this.fork = fork;
+            this.continueLabel = continueLabel;
+            this.breakLabel = breakLabel;
         }
 
-        public override WhileNode UpdateContext(Context context)
+        public override UpdatedWhileNode UpdateContext(Context context)
         {
             context.loopManager.SetLoopLabels(continueLabel, breakLabel);
             var updatedFork = fork.UpdateContext(context.GetChild());
-            return new WhileNode(updatedFork, continueLabel, breakLabel);
+            return new UpdatedWhileNode(updatedFork, continueLabel, breakLabel);
+        }
+    }
+
+    internal class UpdatedWhileNode : UpdatedSemanticNode
+    {
+        private readonly UpdatedForkNode fork;
+        private readonly string continueLabel;
+        private readonly string breakLabel;
+
+        public UpdatedWhileNode(UpdatedForkNode fork, string continueLabel, string breakLabel)
+        {
+            this.fork = fork;
+            this.continueLabel = continueLabel;
+            this.breakLabel = breakLabel;
         }
 
         public override AssemblerCommand[] ToCode()
         {
-            var commands = new AssemblerCommand[] { AssemblerCommand.Label(continueLabel) };
-            return commands
+            var commands = new AssemblerCommand[] { AssemblerCommand.Label(continueLabel) }
                 .Concat(fork.ToCode())
                 .Append(AssemblerCommand.Label(breakLabel))
                 .ToArray();
-        }
-
-        public override bool Equals(object? obj)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
+            return commands;
         }
     }
 }

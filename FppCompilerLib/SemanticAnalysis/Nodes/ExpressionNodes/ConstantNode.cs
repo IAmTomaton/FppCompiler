@@ -1,70 +1,66 @@
 ﻿using FppCompilerLib.CodeGeneration;
 using FppCompilerLib.SemanticAnalysis.MemoryManagement;
+using FppCompilerLib.SemanticAnalysis.TypeManagement;
 using FppCompilerLib.SyntacticalAnalysis;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes
 {
-    internal class ConstantNode : ResultableNode
+    internal class InitedConstantNode : InitedResultableNode
     {
         private readonly string value;
-        public new Constant StaticResult
-        {
-            get
-            {
-                if (staticResult == null) throw new InvalidOperationException($"Call UpdateContext before calling StaticResult");
-                return staticResult as Constant;
-            }
-        }
 
-        public ConstantNode(string value)
+        public InitedConstantNode(string value)
         {
             this.value = value;
         }
 
-        private ConstantNode(string value, Constant result) : this(value)
+        public static InitedConstantNode Parse(NonTerminalNode node, RuleToNodeParseTable _)
         {
-            isStaticResult = true;
-            resultType = result.TypeInfo;
-            staticResult = result;
+            return new InitedConstantNode(((TerminalNode)node.childs[0]).RealValue);
         }
 
-        private ConstantNode(string value, Constant result, Variable target) : this(value, result)
-        {
-            this.target = target;
-        }
-
-        public static ConstantNode Parse(NonTerminalNode node, RuleToNodeParseTable _)
-        {
-            return new ConstantNode(((TerminalNode)node.childs[0]).RealValue);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            if (obj == null) return false;
-            if (obj is not ConstantNode other) return false;
-            return value == other.value;
-        }
-
-        public override int GetHashCode()
-        {
-            return value.GetHashCode();
-        }
-
-        public override ConstantNode UpdateTypes(Context context)
+        public override TypedConstantNode UpdateTypes(Context context)
         {
             var result = context.typeManager.Parse(value);
-            return new ConstantNode(value, result);
+            return new TypedConstantNode(result);
+        }
+    }
+
+    internal class TypedConstantNode : TypedResultableNode
+    {
+        public override TypeInfo ResultType => ConstantResult.TypeInfo;
+        protected override Constant ConstantResult => constant;
+
+        private readonly Constant constant;
+
+        public TypedConstantNode(Constant constant)
+        {
+            this.constant = constant;
         }
 
-        public override ConstantNode UpdateContext(Context context, Variable? target)
+        public override UpdatedConstantNode UpdateContext(Context context, Variable? target)
         {
-            return new ConstantNode(value, StaticResult, target);
+            return new UpdatedConstantNode(constant, target);
+        }
+    }
+
+    internal class UpdatedConstantNode : UpdatedResultableNode
+    {
+        public Constant Constant => constant;
+
+        private readonly Variable? target;
+        private readonly Constant constant;
+
+        public UpdatedConstantNode(Constant constant, Variable? target)
+        {
+            this.constant = constant;
+            this.target = target;
         }
 
         public override AssemblerCommand[] ToCode()
         {
             if (target != null)
-                return MemoryManager.MoveOrPut(StaticResult, target);
+                return MemoryManager.MoveOrPut(constant, target);
             return Array.Empty<AssemblerCommand>();
         }
     }

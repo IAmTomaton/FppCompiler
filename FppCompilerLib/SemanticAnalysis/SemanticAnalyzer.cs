@@ -16,7 +16,7 @@ namespace FppCompilerLib.SemanticAnalysis
         /// </summary>
         /// <param name="rootNode"></param>
         /// <returns></returns>
-        public SemanticNode Parse(SemanticNode rootNode)
+        public UpdatedSemanticNode Parse(InitedSemanticNode rootNode)
         {
             var ramManager = new RAMManager(8);
             var memoryManager = new MemoryManager(ramManager);
@@ -25,9 +25,9 @@ namespace FppCompilerLib.SemanticAnalysis
             var loopManager = new LoopManager();
             var context = new Context(memoryManager, typeManager, functionManager, loopManager);
 
-            rootNode = rootNode.UpdateTypes(context.GetChild());
-            rootNode = rootNode.UpdateContext(context);
-            return rootNode;
+            var typedRootNode = rootNode.UpdateTypes(context.GetChild());
+            var updatedRootNode = typedRootNode.UpdateContext(context);
+            return updatedRootNode;
         }
     }
 }

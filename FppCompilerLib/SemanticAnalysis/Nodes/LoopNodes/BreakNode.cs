@@ -3,45 +3,43 @@ using FppCompilerLib.SyntacticalAnalysis;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes.LoopNodes
 {
-    internal class BreakNode : SemanticNode
+    internal class InitedBreakNode : InitedSemanticNode
     {
-        private readonly string? breakLabel;
+        public InitedBreakNode() { }
 
-        public BreakNode() { }
+        public static InitedBreakNode Parse(NonTerminalNode _, RuleToNodeParseTable __)
+        {
+            return new InitedBreakNode();
+        }
 
-        public BreakNode(string breakLabel)
+        public override TypedBreakNode UpdateTypes(Context context)
+        {
+            return new TypedBreakNode();
+        }
+    }
+
+    internal class TypedBreakNode : TypedSemanticNode
+    {
+        public TypedBreakNode() { }
+
+        public override UpdatedBreakNode UpdateContext(Context context)
+        {
+            return new UpdatedBreakNode(context.loopManager.BreakLabel);
+        }
+    }
+
+    internal class UpdatedBreakNode : UpdatedSemanticNode
+    {
+        private readonly string breakLabel;
+
+        public UpdatedBreakNode(string breakLabel)
         {
             this.breakLabel = breakLabel;
-        }
-
-        public static BreakNode Parse(NonTerminalNode _, RuleToNodeParseTable __)
-        {
-            return new BreakNode();
-        }
-
-        public override BreakNode UpdateTypes(Context context)
-        {
-            return this;
-        }
-
-        public override BreakNode UpdateContext(Context context)
-        {
-            return new BreakNode(context.loopManager.BreakLabel);
         }
 
         public override AssemblerCommand[] ToCode()
         {
             return new AssemblerCommand[] { AssemblerCommand.Jmp(breakLabel) };
-        }
-
-        public override bool Equals(object? obj)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
         }
     }
 }
