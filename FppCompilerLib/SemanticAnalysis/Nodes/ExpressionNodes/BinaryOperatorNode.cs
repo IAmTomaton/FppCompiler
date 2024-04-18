@@ -80,7 +80,7 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes
         {
             var typedArg0 = arg0.UpdateTypes(context.GetChild());
             var typedArg1 = arg1.UpdateTypes(context.GetChild());
-            typedArg0.ResultType.TryGetBinaryOperator(binaryOperator, typedArg0.ResultType, typedArg1.ResultType, out var operatorFunc);
+            var operatorFunc = typedArg0.ResultType.GetBinaryOperator(binaryOperator, typedArg0.ResultType, typedArg1.ResultType);
 
             if (typedArg0.IsConstantResult && typedArg1.IsConstantResult)
             {

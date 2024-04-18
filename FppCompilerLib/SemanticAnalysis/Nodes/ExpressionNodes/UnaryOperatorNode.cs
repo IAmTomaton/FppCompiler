@@ -43,7 +43,7 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes
         public override TypedResultableNode UpdateTypes(Context context)
         {
             var typedArg = arg.UpdateTypes(context.GetChild());
-            typedArg.ResultType.TryGetUnaryOperator(unaryOperator, typedArg.ResultType, out var operatorFunc);
+            var operatorFunc = typedArg.ResultType.GetUnaryOperator(unaryOperator, typedArg.ResultType);
             if (typedArg.IsConstantResult)
             {
                 var constResult = operatorFunc.CalculateConstant(typedArg.GetConstantResult);

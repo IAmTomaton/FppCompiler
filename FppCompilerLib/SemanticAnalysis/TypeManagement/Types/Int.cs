@@ -2,12 +2,10 @@
 using FppCompilerLib.SemanticAnalysis.FunctionManagement;
 using FppCompilerLib.SemanticAnalysis.MemoryManagement;
 
-namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
+namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types
 {
-    internal class Int : Numeric
+    internal class Int : TypeInfo
     {
-        public override int Priority => 2;
-        public override Int BaseType => this;
         public override string Name => "int";
         public override int Size => 1;
 
@@ -22,7 +20,7 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
             return true;
         }
 
-        public override bool TryGetBinaryOperator(string operatorName, TypeInfo arg0Type, TypeInfo arg1Type, out BinaryOperator operatorFunc)
+        public override BinaryOperator GetBinaryOperator(string operatorName, TypeInfo arg0Type, TypeInfo arg1Type)
         {
             if (arg0Type is not Int arg0Int || arg1Type is not Int arg1Int) throw new ArgumentException($"Type int dose not have binary operator for {arg0Type.Name} and {arg1Type.Name}");
             TypeInfo resultType;
@@ -33,30 +31,30 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
             else
                 throw new ArgumentException($"Type int dose not have binary operator {operatorName}");
 
-            operatorFunc = new BinaryOperator(resultType, new Int(), new Int(),
+            var operatorFunc = new BinaryOperator(resultType, new Int(), new Int(),
                 (arg0, arg1) => BinaryOperatorCalculateConstant(arg0, arg1, operatorName),
                 (arg0, arg1, target) => BinaryOperatorToCode(operatorName, arg0, arg1, target));
-            return true;
+            return operatorFunc;
         }
 
         private static Constant BinaryOperatorCalculateConstant(Constant arg0, Constant arg1, string op)
         {
             var funcs = new Dictionary<string, Func<int, int, int>>()
             {
-                { "+", (int arg0, int arg1) => arg0 + arg1 },
-                { "-", (int arg0, int arg1) => arg0 - arg1 },
-                { "*", (int arg0, int arg1) => arg0 * arg1 },
-                { "/", (int arg0, int arg1) => arg0 / arg1 },
-                { "%", (int arg0, int arg1) => arg0 % arg1 },
-                { "**", (int arg0, int arg1) => (int)Math.Pow(arg0, arg1) },
-                { "<<", (int arg0, int arg1) => arg0 << arg1 },
-                { ">>", (int arg0, int arg1) => arg0 >> arg1 },
-                { "==", (int arg0, int arg1) => arg0 == arg1 ? 1 : 0 },
-                { "!=", (int arg0, int arg1) => arg0 != arg1 ? 1 : 0 },
-                { "<", (int arg0, int arg1) => arg0 < arg1 ? 1 : 0 },
-                { "<=", (int arg0, int arg1) => arg0 <= arg1 ? 1 : 0 },
-                { ">", (int arg0, int arg1) => arg0 > arg1 ? 1 : 0 },
-                { ">=", (int arg0, int arg1) => arg0 >= arg1 ? 1 : 0 },
+                { "+", (arg0, arg1) => arg0 + arg1 },
+                { "-", (arg0, arg1) => arg0 - arg1 },
+                { "*", (arg0, arg1) => arg0 * arg1 },
+                { "/", (arg0, arg1) => arg0 / arg1 },
+                { "%", (arg0, arg1) => arg0 % arg1 },
+                { "**", (arg0, arg1) => (int)Math.Pow(arg0, arg1) },
+                { "<<", (arg0, arg1) => arg0 << arg1 },
+                { ">>", (arg0, arg1) => arg0 >> arg1 },
+                { "==", (arg0, arg1) => arg0 == arg1 ? 1 : 0 },
+                { "!=", (arg0, arg1) => arg0 != arg1 ? 1 : 0 },
+                { "<", (arg0, arg1) => arg0 < arg1 ? 1 : 0 },
+                { "<=", (arg0, arg1) => arg0 <= arg1 ? 1 : 0 },
+                { ">", (arg0, arg1) => arg0 > arg1 ? 1 : 0 },
+                { ">=", (arg0, arg1) => arg0 >= arg1 ? 1 : 0 },
             };
 
             return new Constant(new int[] { funcs[op](arg0.machineValues[0], arg1.machineValues[0]) }, new Int());
@@ -128,15 +126,15 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
             return commands.ToArray();
         }
 
-        public override bool TryGetUnaryOperator(string operatorName, TypeInfo argType, out UnaryOperator operatorFunc)
+        public override UnaryOperator GetUnaryOperator(string operatorName, TypeInfo argType)
         {
             if (argType is not Int argInt) throw new ArgumentException($"Type int dose not have unary operator for {argType.Name}");
             if (unaryOperators.Contains(operatorName))
             {
-                operatorFunc = new UnaryOperator(new Int(), new Int(),
+                var operatorFunc = new UnaryOperator(new Int(), new Int(),
                     (arg) => UnaryOperatorCalculateConstant(arg, operatorName),
                     (arg, target) => UnaryOperatorToCode(operatorName, arg, target));
-                return true;
+                return operatorFunc;
             }
             throw new ArgumentException($"Type int dose not have binary operator {operatorName}");
         }
@@ -145,11 +143,11 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
         {
             var funcs = new Dictionary<string, Func<int, int>>()
             {
-                { "-unpre", (int arg) => -arg },
-                { "--unpre", (int arg) => arg - 1 },
-                { "++unpre", (int arg) => arg + 1 },
-                { "--unpost", (int arg) => arg - 1 },
-                { "++unpost", (int arg) => arg + 1 }
+                { "-unpre", (arg) => -arg },
+                { "--unpre", (arg) => arg - 1 },
+                { "++unpre", (arg) => arg + 1 },
+                { "--unpost", (arg) => arg - 1 },
+                { "++unpost", (arg) => arg + 1 }
             };
 
             return new Constant(new int[] { funcs[op](arg.machineValues[0]) }, new Int());
@@ -170,7 +168,7 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
 
             var handlers = new Dictionary<string, Func<Variable, Variable?, AssemblerCommand[]>>()
             {
-                { "-unpre", (Variable variable, Variable? target) =>
+                { "-unpre", (variable, target) =>
                     {
                         if (target is null)
                             return new[] { new AssemblerCommand("sub", 0, variable.address) };
@@ -178,10 +176,10 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
                             return new[] { new AssemblerCommand("sub", 0, variable.address, target.address) };
                     }
                 },
-                { "--unpre", (Variable variable, Variable? target) => UnaryPrefix("dec", variable, target) },
-                { "++unpre", (Variable variable, Variable? target) => UnaryPrefix("inc", variable, target) },
-                { "--unpost", (Variable variable, Variable? target) => UnaryPostfix("dec", variable, target) },
-                { "++unpost", (Variable variable, Variable? target) => UnaryPostfix("inc", variable, target) },
+                { "--unpre", (variable, target) => UnaryPrefix("dec", variable, target) },
+                { "++unpre", (variable, target) => UnaryPrefix("inc", variable, target) },
+                { "--unpost", (variable, target) => UnaryPostfix("dec", variable, target) },
+                { "++unpost", (variable, target) => UnaryPostfix("inc", variable, target) },
             };
 
             if (arg is Variable variable)

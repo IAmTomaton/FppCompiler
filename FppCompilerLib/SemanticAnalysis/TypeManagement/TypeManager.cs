@@ -1,5 +1,5 @@
 ﻿using FppCompilerLib.SemanticAnalysis.MemoryManagement;
-using FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes;
+using FppCompilerLib.SemanticAnalysis.TypeManagement.Types;
 
 namespace FppCompilerLib.SemanticAnalysis.TypeManagement
 {

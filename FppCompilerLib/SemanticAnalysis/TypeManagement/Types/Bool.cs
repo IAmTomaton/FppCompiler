@@ -2,12 +2,10 @@
 using FppCompilerLib.SemanticAnalysis.FunctionManagement;
 using FppCompilerLib.SemanticAnalysis.MemoryManagement;
 
-namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
+namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types
 {
-    internal class Bool : Numeric
+    internal class Bool : TypeInfo
     {
-        public override int Priority => 1;
-        public override Bool BaseType => this;
         public override string Name => "bool";
         public override int Size => 1;
 
@@ -22,24 +20,24 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
             return true;
         }
 
-        public override bool TryGetBinaryOperator(string operatorName, TypeInfo arg0Type, TypeInfo arg1Type, out BinaryOperator operatorFunc)
+        public override BinaryOperator GetBinaryOperator(string operatorName, TypeInfo arg0Type, TypeInfo arg1Type)
         {
             if (arg0Type is not Bool arg0Int || arg1Type is not Bool arg1Int) throw new ArgumentException($"Type Bool dose not have binary operator for {arg0Type.Name} and {arg1Type.Name}");
-            operatorFunc = new BinaryOperator(new Bool(), new Bool(), new Bool(),
+            var operatorFunc = new BinaryOperator(new Bool(), new Bool(), new Bool(),
                 (arg0, arg1) => BinaryOperatorCalculateConstant(arg0, arg1, operatorName),
                 (arg0, arg1, target) => BinaryOperatorToCode(operatorName, arg0, arg1, target));
-            return true;
+            return operatorFunc;
         }
 
         private static Constant BinaryOperatorCalculateConstant(Constant arg0, Constant arg1, string op)
         {
             var funcs = new Dictionary<string, Func<int, int, int>>()
             {
-                { "&", (int arg0, int arg1) => (arg0 != 0) && (arg1 != 0) ? 1 : 0},
-                { "&&", (int arg0, int arg1) => (arg0 != 0) && (arg1 != 0) ? 1 : 0 },
-                { "|", (int arg0, int arg1) => (arg0 != 0) || (arg1 != 0) ? 1 : 0 },
-                { "||", (int arg0, int arg1) => (arg0 != 0) || (arg1 != 0) ? 1 : 0 },
-                { "^", (int arg0, int arg1) => (arg0 != 0) ^ (arg1 != 0) ? 1 : 0 }
+                { "&", (arg0, arg1) => arg0 != 0 && arg1 != 0 ? 1 : 0},
+                { "&&", (arg0, arg1) => arg0 != 0 && arg1 != 0 ? 1 : 0 },
+                { "|", (arg0, arg1) => arg0 != 0 || arg1 != 0 ? 1 : 0 },
+                { "||", (arg0, arg1) => arg0 != 0 || arg1 != 0 ? 1 : 0 },
+                { "^", (arg0, arg1) => arg0 != 0 ^ arg1 != 0 ? 1 : 0 }
             };
 
             return new Constant(new int[] { funcs[op](arg0.machineValues[0], arg1.machineValues[1]) }, new Int());
@@ -99,20 +97,20 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
             return commands.ToArray();
         }
 
-        public override bool TryGetUnaryOperator(string operatorName, TypeInfo argType, out UnaryOperator operatorFunc)
+        public override UnaryOperator GetUnaryOperator(string operatorName, TypeInfo argType)
         {
             if (argType is not Bool argInt) throw new ArgumentException($"Type bool dose not have unary operator for {argType.Name}");
-            operatorFunc = new UnaryOperator(new Bool(), new Bool(),
+            var operatorFunc = new UnaryOperator(new Bool(), new Bool(),
                 (arg) => UnaryOperatorCalculateConstant(arg, operatorName),
                 (arg, target) => UnaryOperatorToCode(operatorName, arg, target));
-            return true;
+            return operatorFunc;
         }
 
         private static Constant UnaryOperatorCalculateConstant(Constant arg, string op)
         {
             var funcs = new Dictionary<string, Func<int, int>>()
             {
-                { "!", (int arg) => arg == 0 ? 1 : 0 }
+                { "!", (arg) => arg == 0 ? 1 : 0 }
             };
 
             return new Constant(new int[] { funcs[op](arg.machineValues[0]) }, new Bool());
@@ -133,7 +131,7 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes
 
             var handlers = new Dictionary<string, Func<Variable, Variable?, AssemblerCommand[]>>()
             {
-                { "!", (Variable variable, Variable? target) =>
+                { "!", (variable, target) =>
                     {
                         if (target is null)
                             return new[] { new AssemblerCommand("not", variable.address) };

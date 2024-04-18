@@ -8,15 +8,19 @@ namespace FppCompilerLib.SemanticAnalysis.TypeManagement
         public abstract int Size { get; }
 
         // Placeholders for functions
-        public virtual bool TryGetFunction(string name, TypeInfo[] argTypes, out Function function) =>
+        public virtual Function GetFunction(string name, TypeInfo[] argTypes) =>
             throw new ArgumentException($"Type \"{Name}\" does not have function \"{name}\"");
-        public virtual bool TryGetConversionFrom(TypeInfo source, out UnaryOperator conversionFunc) =>
+
+        public virtual UnaryOperator GetConversionFrom(TypeInfo source) =>
             throw new ArgumentException($"Type \"{Name}\" cannot be converted from type \"{source.Name}\"");
-        public virtual bool TryGetConversionTo(TypeInfo target, out UnaryOperator conversionFunc) =>
+
+        public virtual UnaryOperator GetConversionTo(TypeInfo target) =>
             throw new ArgumentException($"Type \"{Name}\" a cannot be converted to type \"{target.Name}\"");
-        public virtual bool TryGetUnaryOperator(string operatorName, TypeInfo argType, out UnaryOperator operatorFunc) =>
+
+        public virtual UnaryOperator GetUnaryOperator(string operatorName, TypeInfo argType) =>
             throw new ArgumentException($"Type \"{Name}\" does not have unary operator \"{operatorName}\"");
-        public virtual bool TryGetBinaryOperator(string operatorName, TypeInfo arg0Type, TypeInfo arg1Type, out BinaryOperator operatorFunc) =>
+
+        public virtual BinaryOperator GetBinaryOperator(string operatorName, TypeInfo arg0Type, TypeInfo arg1Type) =>
             throw new ArgumentException($"Type \"{Name}\" does not have binary operator \"{operatorName}\"");
 
         public abstract override int GetHashCode();

@@ -1,7 +1,7 @@
 ﻿using FppCompilerLib.CodeGeneration;
 using FppCompilerLib.SemanticAnalysis.MemoryManagement;
 using FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes;
-using FppCompilerLib.SemanticAnalysis.TypeManagement.Types.NumericTypes;
+using FppCompilerLib.SemanticAnalysis.TypeManagement.Types;
 using FppCompilerLib.SyntacticalAnalysis;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes
