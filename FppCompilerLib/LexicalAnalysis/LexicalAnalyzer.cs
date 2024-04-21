@@ -8,7 +8,7 @@ namespace FppCompilerLib.LexicalAnalysis
     /// </summary>
     internal class LexicalAnalyzer
     {
-        private readonly string[] binaryOperators = { "<<", ">>", "**", "!=", "==", "<=", ">=", "||", "&&", ">", "<", "+", "/", "%", "|", "&", "^" };
+        private readonly string[] binaryOperators = { "<<", ">>", "**", "!=", "==", "<=", ">=", "||", "&&", ">", "<", "+", "/", "%", "|", "^" };
         private readonly string[] unaryOperators = { "~", "!", "--", "++" };
         private readonly string[] specialCharacters = { "=", ";", "{", "}", "(", ")", "[", "]", ".", ",", "-", "*", "&" };
         private readonly string[] specialWords = { "if", "else", "for", "while", "const", "continue", "break"};

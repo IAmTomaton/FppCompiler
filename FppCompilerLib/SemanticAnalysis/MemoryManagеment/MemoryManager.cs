@@ -1,5 +1,6 @@
 ﻿using FppCompilerLib.CodeGeneration;
 using FppCompilerLib.SemanticAnalysis.TypeManagement;
+using FppCompilerLib.SemanticAnalysis.TypeManagement.Types;
 
 namespace FppCompilerLib.SemanticAnalysis.MemoryManagement
 {
@@ -113,6 +114,34 @@ namespace FppCompilerLib.SemanticAnalysis.MemoryManagement
                 return AssemblerCommand.Put(constant.machineValues, address);
             if (data is Variable variable)
                 return AssemblerCommand.Move(variable.address, address, variable.TypeInfo.Size);
+            throw new ArgumentException();
+        }
+
+        public static AssemblerCommand[] MoveFromPointer(Data data, Variable target)
+        {
+            if (data.TypeInfo is not Pointer pointer)
+                throw new ArgumentException("It's not pointerType");
+            if (pointer.ChildType.Size != target.TypeInfo.Size)
+                throw new ArgumentException("data sizes do not match");
+
+            if (data is Constant constant)
+                return MoveOrPut(new Variable(constant.machineValues[0], pointer.ChildType), target);
+            if (data is Variable variable)
+                return AssemblerCommand.Move4p(variable.address, target.address, pointer.ChildType.Size);
+            throw new ArgumentException();
+        }
+
+        public static AssemblerCommand[] MoveOrPutToPointer(Data data, Variable target)
+        {
+            if (target.TypeInfo is not Pointer pointer)
+                throw new ArgumentException("It's not pointerType");
+            if (pointer.ChildType.Size != data.TypeInfo.Size)
+                throw new ArgumentException("data sizes do not match");
+
+            if (data is Constant constant)
+                return AssemblerCommand.Put2p(constant.machineValues, target.address);
+            if (data is Variable variable)
+                return AssemblerCommand.Move2p(variable.address, target.address, pointer.ChildType.Size);
             throw new ArgumentException();
         }
 

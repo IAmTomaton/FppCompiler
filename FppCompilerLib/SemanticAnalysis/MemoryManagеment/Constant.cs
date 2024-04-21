@@ -15,6 +15,8 @@ namespace FppCompilerLib.SemanticAnalysis.MemoryManagement
             this.typeInfo = typeInfo;
         }
 
+        public Constant(int machineValue, TypeInfo typeInfo) : this(new int[] { machineValue }, typeInfo) { }
+
         public Constant Copy() => new(machineValues, typeInfo);
     }
 }

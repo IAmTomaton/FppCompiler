@@ -60,16 +60,65 @@
             return new MachineCommand(cmdToId[cmd], args.Select(arg => int.Parse(arg)).ToArray());
         }
 
-        public static AssemblerCommand Move(int addr0, int addr1) => new("mov", addr0, addr1);
-        public static AssemblerCommand[] Move(int addr0, int addr1, int length)
-        {
-            return Enumerable.Range(0, length).Select(i => Move(addr0 + i, addr1 + i)).ToArray();
-        }
         public static AssemblerCommand Put(int value, int addr) => new("put", value, addr);
         public static AssemblerCommand[] Put(int[] values, int addr1)
         {
             return Enumerable.Range(0, values.Length).Select(i => Put(values[i], addr1 + i)).ToArray();
         }
+
+        public static AssemblerCommand Move(int addr0, int addr1) => new("mov", addr0, addr1);
+        public static AssemblerCommand[] Move(int addr0, int addr1, int length)
+        {
+            return Enumerable.Range(0, length).Select(i => Move(addr0 + i, addr1 + i)).ToArray();
+        }
+
+        public static AssemblerCommand Put2p(int value, int pointerAddr) => new("put2p", value, pointerAddr);
+        public static AssemblerCommand[] Put2p(int[] values, int pointerAddr)
+        {
+            if (values.Length == 1) return new AssemblerCommand[] { Put2p(values[0], pointerAddr) };
+
+            var commands = Enumerable.Empty<AssemblerCommand>()
+                .Append(Move(pointerAddr, pointerCounterAddr))
+                .Concat(
+                    Enumerable.Range(0, values.Length)
+                    .SelectMany(i => new AssemblerCommand[] { Put2p(values[i], pointerCounterAddr), Inc(pointerCounterAddr) }))
+                .SkipLast(1)
+                .ToArray();
+            return commands;
+        }
+
+        public static AssemblerCommand Move2p(int addr, int pointerAddr) => new("mov2p", addr, pointerAddr);
+        public static AssemblerCommand[] Move2p(int addr, int pointerAddr, int length)
+        {
+            if (length == 1) return new AssemblerCommand[] { Move2p(addr, pointerAddr) };
+
+            var commands = Enumerable.Empty<AssemblerCommand>()
+                .Append(Move(pointerAddr, pointerCounterAddr))
+                .Concat(
+                    Enumerable.Range(0, length)
+                    .SelectMany(i => new AssemblerCommand[] { Move2p(addr + i, pointerCounterAddr), Inc(pointerCounterAddr) }))
+                .SkipLast(1)
+                .ToArray();
+            return commands;
+        }
+
+        public static AssemblerCommand Move4p(int pointerAddr, int addr) => new("mov4p", pointerAddr, addr);
+        public static AssemblerCommand[] Move4p(int pointerAddr, int addr, int length)
+        {
+            if (length == 1) return new AssemblerCommand[] { Move4p(pointerAddr, addr) };
+
+            var commands = Enumerable.Empty<AssemblerCommand>()
+                .Append(Move(pointerAddr, pointerCounterAddr))
+                .Concat(
+                    Enumerable.Range(0, length)
+                    .SelectMany(i => new AssemblerCommand[] { Move4p(pointerCounterAddr, addr + i), Inc(pointerCounterAddr) }))
+                .SkipLast(1)
+                .ToArray();
+            return commands;
+        }
+
+        public static AssemblerCommand Inc(int addr) => new("inc", addr, 0, addr);
+        public static AssemblerCommand Dec(int addr) => new("dec", addr, 0, addr);
 
         public static AssemblerCommand Jmp(int index) => new("jmp", 0, index);
         public static AssemblerCommand Jmp(string label) => new("jmp", 0, label);
@@ -99,15 +148,16 @@
             return args.SequenceEqual(other.args);
         }
 
+        private static readonly int pointerCounterAddr = 4;
         private static readonly Dictionary<string, (int, int)> cmdToId = new()
         {
             { "empty", (0, 0) },  // empty command, stop programm
 
             { "put", (1, 1) },  // put
             { "mov", (1, 2) },  // move
-            { "put2i", (1, 3) }, // put to pointer
-            { "move2i", (1, 4) },  // move to pointer
-            { "move4i", (1, 5) },  // move from pointer
+            { "put2p", (1, 3) }, // put to pointer
+            { "mov2p", (1, 4) },  // move to pointer
+            { "mov4p", (1, 5) },  // move from pointer
 
             { "add", (2, 1) },  // +
             { "sub", (2, 2) },  // -

@@ -7,7 +7,20 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes.TypeNodes
     {
         public static InitedSemanticNode Parse(NonTerminalNode node, RuleToNodeParseTable parceTable)
         {
-            return parceTable.Parse((NonTerminalNode)node.childs[0]);
+            var typeNode = parceTable.Parse<InitedTypeNode>((NonTerminalNode)node.childs[0]);
+
+            var tokens = node.childs.Last().AsNonTerminalNode.childs;
+            while (tokens.Length > 0)
+            {
+                var nonTerminal = tokens[0].AsNonTerminalNode;
+                if (nonTerminal.nonTerminal.value == "pointer_type")
+                {
+                    typeNode = new InitedPointerTypeNode(typeNode);
+                }
+                tokens = nonTerminal.childs.Last().AsNonTerminalNode.childs;
+            }
+
+            return typeNode;
         }
 
         public override abstract TypedTypeNode UpdateTypes(Context context);

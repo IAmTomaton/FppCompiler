@@ -20,7 +20,7 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes
         public static InitedResultableNode ParsePrefix(NonTerminalNode node, RuleToNodeParseTable parceTable)
         {
             var unaryOperator = ((TerminalNode)node.childs[0]).RealValue;
-            var specialOperators = new string[] { "-", "&", "*", "++", "--" };
+            var specialOperators = new string[] { "-", "++", "--" };
             if (specialOperators.Contains(unaryOperator))
                 unaryOperator += "unpre";
             var arg = parceTable.Parse<InitedResultableNode>((NonTerminalNode)node.childs[1]);
@@ -99,10 +99,10 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes
 
         public override AssemblerCommand[] ToCode()
         {
-            var commands = arg.ToCode()
-                .Concat(operatorFunc.ToCode(argData, target))
-                .ToArray();
-            return commands;
+            IEnumerable<AssemblerCommand> commands = arg.ToCode();
+            if (target != null)
+                commands = commands.Concat(operatorFunc.ToCode(argData, target));
+            return commands.ToArray();
         }
     }
 }

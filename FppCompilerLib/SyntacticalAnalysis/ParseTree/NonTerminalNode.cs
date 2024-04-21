@@ -4,8 +4,7 @@
     {
         public readonly ParseNode[] childs;
         public readonly Rule rule;
-
-        private readonly NonTerminal nonTerminal;
+        public readonly NonTerminal nonTerminal;
 
         public NonTerminalNode(NonTerminal nonTerminal, ParseNode[] childs, Rule rule)
         {

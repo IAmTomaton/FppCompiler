@@ -29,19 +29,22 @@ namespace FppCompilerLib
             AddRule(bodyAdd, new Token[] { loopFor, bodyAdd });
             AddLambdaRule(bodyAdd);
 
+            // BodyLine
             AddRule(bodyLine, expression, PassParse(0));
             AddRule(bodyLine, createVariableLine, PassParse(0));
             AddRule(bodyLine, assignVariableLine, PassParse(0));
             AddRule(bodyLine, continueCmd, PassParse(0));
             AddRule(bodyLine, breakCmd, PassParse(0));
 
+            // Create variable
             AddRule(createVariableLine, new Token[] { typeExpression, Terminal.Word, assignVariableS }, InitedCreateVariableNode.Parse);
             AddRule(assignVariableS, new Token[] { new Terminal("="), expression });
             AddLambdaRule(assignVariableS);
 
-            AddRule(assignVariableLine, new Token[] { assignVariableLineArg, new Terminal("="), expression }, InitedAssignNode.Parse);
-            AddRule(assignVariableLineArg, Terminal.Word, InitedAssignableVariableNode.Parse);
-            //AddRule(assignVariableLineArg, new Token[] { new Terminal("*"), assignVariableLineArg }));
+            // Assign variable
+            AddRule(assignVariableLine, new Token[] { assignVariableLineArg, new Terminal("="), expression }, InitedAssignVariableNode.Parse);
+            AddRule(assignVariableLineArg, Terminal.Word, InitedVariableNode.Parse);
+            AddRule(assignVariableLine, new Token[] { new Terminal("*"), expressionArgS, new Terminal("="), expression }, InitedAssignPointerNode.Parse);
 
             // Math expression
             AddRule(expression, new Token[] { expressionArg, expressionS }, InitedBinaryOperatorNode.Parse);
@@ -51,8 +54,8 @@ namespace FppCompilerLib
             AddLambdaRule(postfixOperator);
 
             AddRule(expressionArg, new Token[] { new Terminal("-"), expressionArg }, InitedUnaryOperatorNode.ParsePrefix);
-            AddRule(expressionArg, new Token[] { new Terminal("&"), expressionArg }, InitedUnaryOperatorNode.ParsePrefix);
-            AddRule(expressionArg, new Token[] { new Terminal("*"), expressionArg }, InitedUnaryOperatorNode.ParsePrefix);
+            AddRule(expressionArg, new Token[] { new Terminal("&"), expressionArg }, InitedAddressOfOperatorNode.Parse);
+            AddRule(expressionArg, new Token[] { new Terminal("*"), expressionArg }, InitedDereferenceOperatorNode.Parse);
             AddRule(expressionArg, new Token[] { Terminal.UnaryOperator, expressionArg }, InitedUnaryOperatorNode.ParsePrefix);
 
             AddRule(expressionArgS, Terminal.Const, InitedConstantNode.Parse);
@@ -69,7 +72,11 @@ namespace FppCompilerLib
             // Type expression
             AddRule(typeExpression, new Token[] { simpleType, additionType }, InitedTypeNode.Parse);
             AddRule(simpleType, Terminal.Type, InitedSimpleTypeNode.Parse);
+
+            AddRule(additionType, pointerType);
             AddLambdaRule(additionType);
+
+            AddRule(pointerType, new Token[] { new Terminal("*"), additionType });
 
             // Fork
             AddRule(fork,

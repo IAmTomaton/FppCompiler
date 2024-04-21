@@ -10,9 +10,9 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes
     {
         private readonly string name;
         private readonly InitedTypeNode typeNode;
-        private readonly InitedAssignNode? assignNode;
+        private readonly InitedAssignVariableNode? assignNode;
 
-        public InitedCreateVariableNode(InitedTypeNode typeNode, string name, InitedAssignNode? assignNode = null)
+        public InitedCreateVariableNode(InitedTypeNode typeNode, string name, InitedAssignVariableNode? assignNode = null)
         {
             this.typeNode = typeNode;
             this.name = name;
@@ -24,12 +24,12 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes
             var name = ((TerminalNode)node.childs[1]).RealValue;
             var typeNode = parceTable.Parse<InitedTypeNode>((NonTerminalNode)node.childs[0]);
 
-            InitedAssignNode? assignNode = null;
+            InitedAssignVariableNode? assignNode = null;
             var assignChilds = node.childs[2].AsNonTerminalNode.childs;
             if (assignChilds.Length > 0)
             {
                 var expression = parceTable.Parse<InitedResultableNode>(assignChilds[1].AsNonTerminalNode);
-                assignNode = new InitedAssignNode(new InitedAssignableVariableNode(name), expression);
+                assignNode = new InitedAssignVariableNode(new InitedVariableNode(name), expression);
             }
 
             return new InitedCreateVariableNode(typeNode, name, assignNode);
@@ -50,9 +50,9 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes
     {
         private readonly string name;
         private readonly TypedTypeNode typeNode;
-        private readonly TypedAssignNode? assignNode;
+        private readonly TypedAssignVariableNode? assignNode;
 
-        public TypedCreateVariableNode(TypedTypeNode typeNode, string name, TypedAssignNode? assignNode)
+        public TypedCreateVariableNode(TypedTypeNode typeNode, string name, TypedAssignVariableNode? assignNode)
         {
             this.typeNode = typeNode;
             this.name = name;
@@ -70,9 +70,9 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes
 
     internal class UpdatedCreateVariableNode : UpdatedSemanticNode
     {
-        private readonly UpdatedAssignNode? assignNode;
+        private readonly UpdatedAssignVariableNode? assignNode;
 
-        public UpdatedCreateVariableNode(UpdatedAssignNode? assignNode = null)
+        public UpdatedCreateVariableNode(UpdatedAssignVariableNode? assignNode = null)
         {
             this.assignNode = assignNode;
         }
