@@ -1,4 +1,5 @@
-﻿using FppCompilerLib.SemanticAnalysis.TypeManagement;
+﻿using FppCompilerLib.SemanticAnalysis.Nodes.ExpressionNodes;
+using FppCompilerLib.SemanticAnalysis.TypeManagement;
 using FppCompilerLib.SyntacticalAnalysis;
 
 namespace FppCompilerLib.SemanticAnalysis.Nodes.TypeNodes
@@ -16,6 +17,11 @@ namespace FppCompilerLib.SemanticAnalysis.Nodes.TypeNodes
                 if (nonTerminal.nonTerminal.value == "pointer_type")
                 {
                     typeNode = new InitedPointerTypeNode(typeNode);
+                }
+                else if (nonTerminal.nonTerminal.value == "array_type")
+                {
+                    var sizeExp = parceTable.Parse<InitedResultableNode>(nonTerminal.childs[1].AsNonTerminalNode);
+                    typeNode = new InitedArrayTypeNode(sizeExp, typeNode);
                 }
                 tokens = nonTerminal.childs.Last().AsNonTerminalNode.childs;
             }

@@ -74,9 +74,11 @@ namespace FppCompilerLib
             AddRule(simpleType, Terminal.Type, InitedSimpleTypeNode.Parse);
 
             AddRule(additionType, pointerType);
+            AddRule(additionType, arrayType);
             AddLambdaRule(additionType);
 
             AddRule(pointerType, new Token[] { new Terminal("*"), additionType });
+            AddRule(arrayType, new Token[] { new Terminal("["), expression, new Terminal("]"), additionType });
 
             // Fork
             AddRule(fork,

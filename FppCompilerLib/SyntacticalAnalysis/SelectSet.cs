@@ -15,6 +15,8 @@
 
         public List<Rule> GetRules(NonTerminal nonTerminal, Terminal[] select)
         {
+            if (!selectDict.ContainsKey(nonTerminal) || !selectDict[nonTerminal].ContainsKey(select))
+                return new List<Rule>();
             return selectDict[nonTerminal][select];
         }
 
